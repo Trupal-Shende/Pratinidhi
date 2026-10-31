@@ -1,0 +1,512 @@
+1. Problem statement — who hurts and why
+Indian citizens seeking government services face a fragmented, opaque process: they must identify the right department and scheme, understand eligibility and document requirements, navigate unstable portals, fill unfamiliar forms, respond to status changes, and follow up with offices that often do not answer.
+
+The burden falls hardest on seniors, students, migrant workers, and citizens with low digital literacy or limited English proficiency. They lose wages and time through repeat visits, incomplete applications, and avoidable rejections—while intermediaries charge for tasks that should be accessible directly.
+
+The
+
+
+
+
+
+
+Working assumption: I interpret “yes” as the stricter demo definition: a real submission on a real government portal that returns an acknowledgement/application number. Your answer “every document” is ambiguous; this PRD treats it as support for common supporting documents, not every Indian government service or document type.
+PRD — Personal Civic Agent for India
+1. Problem statement — who hurts and why
+Indian citizens often cannot access routine government services without navigating fragmented portals, confusing eligibility rules, document uploads, OTPs, office visits, and unresponsive helplines. The burden falls hardest on senior citizens, students, migrant workers, and people with limited digital literacy or language fluency.
+
+They lose time, wages, benefits, and confidence—or pay informal middlemen—because they cannot reliably complete and follow up on applications themselves.
+
+The product is a consent-first civic agent: citizens explain their need by voice in their language; the agent determines the service and requirements, collects documents, fills real portal forms using computer use, asks for approval before irreversible actions, tracks progress, and provides plain-language updates and escalation support.
+2. Target user + 2 personas
+Target user: Indian residents who need help completing a government-service request and can access a smartphone and receive OTPs/calls. The initial release targets Hindi and English speakers; other Indian languages follow only after quality validation.
+
+Persona 1 — Savitri, 68, pensioner
+- Lives in a tier-2 city; speaks Hindi and has low confidence using websites.
+- Needs a pension restart or income certificate.
+- Has identity documents as paper copies or WhatsApp photos.
+- Wants to understand what is happening without sharing control of her identity or bank details.
+- Success: “My application was submitted, I got the receipt, and someone tells me the next step in Hindi.”
+Persona 2 — Imran, 24, migrant worker/student
+- Moves between states for work or study; primarily uses an Android phone.
+- Needs a domicile/income certificate or scholarship application.
+- Risks missing deadlines because documents and portals differ by location.
+- Wants a fast, trustworthy alternative to a broker.
+- Success: “I completed the process without taking a day off work or paying someone unofficially.”
+3. Goals and non-goals
+Goals
+- Convert a spoken, vague request into a specific government-service application.
+- Complete one supported service on a real portal and obtain an acknowledgement number.
+- Collect and validate required documents with explicit, granular consent.
+- Use computer automation to fill forms while preserving citizen control.
+- Pause before each irreversible action: submission, payment, e-sign, declaration, and outbound call.
+- Track submitted applications and explain progress in the citizen’s language.
+- Create an auditable record of consent, actions, data access, and portal outcomes.
+Non-goals
+- Supporting every government service, state, portal, or document in the MVP.
+- Bypassing CAPTCHAs, OTPs, e-signature, biometric requirements, portal terms, or human verification.
+- Making eligibility decisions, fabricating documents, or representing itself as the citizen or a government official.
+- Holding funds, paying fees autonomously, or accessing bank credentials.
+- Guaranteeing approval, processing time, or an officer response.
+- Replacing legal aid, grievance redressal, or human review for complex cases.
+4. User stories
+- As a citizen, I want to describe my need by voice in Hindi or English so that I do not need to understand a government portal.
+- As a citizen, I want the agent to ask only the questions needed for my service so that I can finish intake quickly.
+- As a citizen, I want to see why each document is required and approve its use so that I remain in control of my identity data.
+- As a citizen, I want the agent to tell me what is missing or unreadable so that I can correct it before submission.
+- As a citizen, I want the agent to fill the portal form for me so that I avoid errors and repetitive typing.
+- As a citizen, I want to review a plain-language summary before submission so that I can catch mistakes.
+- As a citizen, I want to enter my own OTP and approve declarations so that the agent cannot act beyond my permission.
+- As a citizen, I want a receipt and acknowledgement number after submission so that I have proof of my application.
+- As a citizen, I want periodic status updates in my preferred language so that I know whether action is needed.
+- As a citizen, I want the agent to prepare and, after approval, place a transparent follow-up call so that I do not have to navigate inaccessible helplines.
+- As a support operator, I want to review failed or uncertain automation runs without seeing unnecessary identity data so that I can help safely.
+5. Feature list split into MVP / v2 / later
+MVP
+1. Voice-led service intake in Hindi and English.
+2. Narrow service catalog for one state and one to two services selected before build.
+3. Eligibility and document checklist engine for supported services.
+4. Secure document capture, document-quality checks, and citizen consent controls.
+5. Real-portal computer-use workflow for supported services.
+6. Citizen confirmation gates for OTP, declaration, payment, e-sign, submission, and phone calls.
+7. Submission receipt capture and acknowledgement-number extraction.
+8. Application status checks and plain-language updates.
+9. Stalled-application detection plus approved voice-call workflow/script.
+10. Consent, action, and data-access audit trail.
+V2
+- Additional Indian languages based on measured speech-recognition quality.
+- Additional states and service workflows.
+- Assisted document extraction and prefill from user-approved documents.
+- Optional caregiver/community-worker delegation with separate permissions.
+- Appointment booking and office-visit preparation.
+- Grievance/escalation draft generation for eligible cases.
+- Human support handoff for low-confidence cases.
+- WhatsApp/SMS updates where legally and operationally viable.
+Later
+- Broad multi-state service marketplace.
+- Verified partner network for assisted service centers.
+- Proactive benefit discovery.
+- Cross-portal reusable citizen profile, subject to consent and legal review.
+- Full case-management integrations with government departments.
+- Payment orchestration through compliant third-party payment providers.
+6. Detailed functional requirements per MVP feature
+A. Voice-led intake
+- Support Hindi and English voice input; display the transcript and allow correction before proceeding.
+- Ask for preferred language, location/state, service need, urgency, and whether a caregiver is assisting.
+- Convert vague requests into one of: supported service, unsupported service, or insufficient information.
+- Explain the proposed service in plain language and require citizen confirmation before document collection.
+- Store the original audio only with explicit consent; default to storing transcript and structured answers instead.
+- Escalate to human support or provide a referral when confidence is below the defined threshold.
+B. Service catalog and requirements engine
+- Each supported service must define: state, portal URL, eligibility criteria, required/optional documents, fee, SLA if published, form fields, OTP/e-sign rules, status-check method, and escalation path.
+- The agent may only initiate an application when the service configuration is approved and current.
+- The system must show the citizen a checklist with “required,” “optional,” and “not needed” categories.
+- Any uncertain interpretation of rules must block autonomous submission and request user confirmation or human review.
+C. Document collection and validation
+- Accept camera scans, image uploads, and PDFs.
+- Classify document type only after citizen identifies or confirms it.
+- Check legibility, all pages, expiry where relevant, name/date mismatches, and missing fields.
+- Never alter, generate, or “repair” a government document.
+- Explain mismatches in plain language and suggest acceptable alternatives from the service configuration.
+- Encrypt documents at rest and in transit; apply per-application access control.
+- Provide a visible “delete application data” option, subject to retention obligations and already-submitted portal data.
+D. Consent and identity-data controls
+- Obtain separate affirmative consent for: document processing, portal access, each document upload, submission, outbound calling, and optional audio retention.
+- Before portal automation begins, show the portal name, purpose, and fields/documents to be used.
+- Before irreversible actions, show a concise review screen and require active confirmation.
+- OTPs must be entered by the citizen or passed through an ephemeral secure handoff; never log, reuse, or expose them to operators.
+- The agent must not store Aadhaar numbers, PAN, bank details, passwords, or OTPs unless a documented legal/compliance review explicitly authorizes a narrowly scoped exception. Default design: redact/minimize these fields.
+- Every consent must be timestamped, versioned, revocable for future actions, and linked to the requested purpose.
+E. Real-portal computer use
+- Run portal interaction in an isolated browser session per application.
+- Navigate only allowlisted government domains configured for the service.
+- Fill fields from citizen-confirmed data; never infer sensitive facts such as caste, income, disability, or marital status.
+- Capture step-level evidence: timestamp, action type, portal screen state, success/failure, and redacted screenshot where permitted.
+- Stop and ask the citizen to act for CAPTCHA, OTP, e-sign, biometric verification, account credentials, or any portal message outside expected flow.
+- Detect broken pages, session expiry, changed form labels, upload failures, and unexpected redirects; stop instead of guessing.
+- On success, capture the acknowledgement number, receipt, submission timestamp, and next expected action.
+F. Submission review and confirmation
+- Present a readable summary of submitted answers, attachments, fees, declarations, and portal destination.
+- Require explicit confirmation for each submission attempt, including retries after failure.
+- If a fee is required, redirect the citizen to the authorized payment page; the product must not receive or retain payment credentials.
+- Preserve the receipt after submission and make it accessible in the citizen’s preferred language.
+G. Status tracking and citizen updates
+- Check application status only at configured intervals and only while status-tracking consent remains active.
+- Parse the official portal’s status text, retain the original status, and provide a plain-language explanation.
+- Notify the citizen when: status changes, action is required, a deadline approaches, the expected SLA is exceeded, or tracking fails repeatedly.
+- Show the latest official source, check timestamp, acknowledgement number, and recommended next action.
+H. Stalled-case follow-up and voice calling
+- Define “stalled” per service: no movement beyond the published SLA, or no change for a configured number of days when no SLA exists.
+- Generate a call script containing only necessary case details: citizen-approved identity verification details, application number, submission date, and requested status.
+- Show the script and require approval immediately before calling.
+- At call start, disclose that the caller is an automated assistant calling on behalf of the citizen, where permitted.
+- Record calls only with legally valid notice and consent; otherwise retain a structured call outcome and minimal notes.
+- The voice agent must not threaten, bribe, misrepresent authority, reveal unnecessary documents, or make legal claims.
+- If the officer asks for a prohibited action or unofficial payment, end the call and flag the case to the citizen.
+I. Audit trail and user control
+- Maintain immutable event records for consent, data access, document upload, automation steps, confirmations, status checks, call outcomes, and deletion requests.
+- Allow the citizen to view: what was shared, with whom, why, and when.
+- Allow the citizen to pause tracking, withdraw future consent, revoke delegation, and request data deletion.
+- Support internal support access through role-based, time-bound permissions with audit logging.
+7. Data model sketch
+Entity	Key fields
+Citizen	citizen_id, preferred_language, phone, verification status, communication preferences
+ServiceRequest	request_id, citizen_id, stated_need, normalized_service, state, status, urgency, confidence
+ServiceConfiguration	service_id, state, portal domains, eligibility rules, required documents, form schema, fee rules, SLA, escalation policy, version
+Application	application_id, request_id, service_id, portal reference, acknowledgement_number, portal_status, submitted_at, next_action_at
+Document	document_id, citizen_id, type, encrypted_location, checksum, quality_status, expiry_date, redaction metadata, retention deadline
+DocumentUse	document_use_id, document_id, application_id, purpose, portal destination, uploaded_at, consent_id
+Consent	consent_id, citizen_id, scope, purpose, granted_at, revoked_at, policy_version, confirmation method
+FormData	form_data_id, application_id, schema_version, field values, source, citizen_confirmed_at
+AutomationRun	run_id, application_id, portal session reference, step, result, failure code, redacted evidence, started_at, ended_at
+Confirmation	confirmation_id, application_id, action type, summary version, approved_at, rejected_at
+StatusCheck	check_id, application_id, official_status, raw status text, checked_at, source URL, parsed confidence
+FollowUpCase	followup_id, application_id, trigger reason, escalation state, next follow-up date
+CallAttempt	call_id, followup_id, approved script, consent_id, outcome, minimal notes, recording reference if valid
+AuditEvent	event_id, actor type, actor_id, entity type, action, timestamp, purpose, redacted metadata
+
+
+8. Edge cases and failure states
+- Citizen request does not map to a supported service: explain limitation, do not collect documents unnecessarily, provide official portal/contact guidance.
+- Wrong state or jurisdiction: ask for correct location and remap; do not guess based on phone number.
+- Low-quality speech/transcription: show transcript, request correction, offer typed or caregiver-assisted intake.
+- Missing, expired, unreadable, or mismatched documents: identify the exact issue and pause the workflow.
+- Portal is down, slow, or changes layout: preserve progress where possible, retry within limits, then notify the citizen; never submit based on an unverified screen.
+- CAPTCHA/OTP/e-sign appears: pause and ask the citizen to complete it; no bypass attempts.
+- Session expires after data entry: restart only with citizen-approved retained data and reconfirm before submission.
+- Duplicate application risk: check acknowledgement/reference number and portal status before resubmitting; require explicit confirmation if uncertainty remains.
+- Fee differs from configuration: halt and show the discrepancy; require a fresh review and confirmation.
+- Portal rejects an application: capture official reason, explain it plainly, and create a remediation checklist.
+- Status is unavailable or contradictory: show original status text and mark interpretation as uncertain.
+- Call reaches an unrelated person, asks for bribe, or requests extra sensitive data: terminate, record minimal outcome, notify citizen, and provide official grievance/referral guidance.
+- Citizen revokes consent during processing: stop future automated actions, revoke access, and explain what cannot be undone on the government portal.
+- Potential fraud or account takeover: freeze the case, require re-verification, and route to human review.
+- Vulnerable user cannot complete confirmation: support a formally authorized caregiver flow; do not rely on informal verbal delegation.
+9. Success metrics
+Demo acceptance criteria
+- One supported service is submitted successfully on a real portal.
+- A real acknowledgement/application number and receipt are captured.
+- Voice intake correctly produces a confirmed service request in Hindi or English.
+- The agent fills the portal form through computer use without an operator manually completing fields.
+- The demo includes at least one citizen confirmation gate before submission.
+- A submitted application receives a status check.
+- A stalled-case scenario produces a citizen-approved call script and completes a real, consented voice-call flow if a valid official contact path is available.
+- Audit history shows consent, documents used, confirmation, submission, and status-check events.
+Product metrics
+Metric	Initial target
+Intake-to-correct-service classification	≥85% on supported intents
+Form submissions requiring no human correction	≥70%
+Successful acknowledgement capture after confirmed submission	≥95%
+Document-quality issue detected before portal upload	≥90%
+Citizens who understand the next action in usability testing	≥80%
+Irreversible actions with logged explicit confirmation	100%
+OTPs/secrets retained in logs	0
+Unauthorized document access events	0
+Automation failures with a clear citizen-facing explanation	≥95%
+Median time saved versus self-service baseline	Establish baseline during pilot
+
+
+10. Open questions
+1. Which exact state and service will be the first supported workflow? A real 24-hour demo cannot credibly support “every document” or every government service.
+2. Is the initial service income certificate, scholarship, pension restart, or another workflow with a publicly accessible portal and acknowledgement receipt?
+3. What is the approved real telephony provider, and what legal/compliance review confirms automated calls and recordings are permitted?
+4. What identity-verification model is required before handling sensitive documents?
+5. Which document types may be retained, for how long, and under which legal basis?
+6. Will the product support Aadhaar-derived information at all? The default recommendation is no storage and no processing beyond strictly necessary, user-controlled portal entry.
+7. What is the human-support model when portal automation or eligibility interpretation is uncertain?
+8. How will the product handle portal terms of use, rate limits, bot detection, and official authorization?
+9. What is the escalation path if an official asks for an unofficial payment or directs the citizen to a middleman?
+10. Is a real completed submission with acknowledgement number mandatory for the demo? This PRD assumes yes, but the selected service and portal must be validated immediately.
+
+  
+7:29 PM
+
+
+
+
+
+
+
+enterprise_resource_architecture_guide.pdfPDFOpen file
+
+
+
+I received the PDF, but your request is blank. What would you like me to do with it—summarize it, extract a PRD-relevant architecture, review it, or something else?
+
+  
+7:32 PM
+
+
+
+
+
+
+
+You are a senior product designer. Using the PRD above, produce a complete design brief before any code is written.
+
+Deliver:
+1. Design principles — 3 rules this product's UI must obey
+2. Visual direction — mood, references, what to avoid
+3. Design tokens — color palette with hex + usage, type scale, spacing scale, radius, shadows
+4. Screen inventory — every screen with its purpose
+5. User flows — step by step for each core journey
+6. Per-screen layout — sections, hierarchy, primary action, components used
+7. Component library — every reusable component with its variants and states
+8. States — empty, loading, error, success, offline for each key screen
+9. Responsive behaviour — mobile, tablet, desktop
+10. Accessibility — contrast ratios, focus order, keyboard nav, ARIA needs
+Make deliberate choices and justify each one. Avoid generic defaults. If you're choosing a font or color, tell me why it fits this specific product.
+
+
+
+
+
+
+
+7:35 PM
+
+
+
+
+
+
+Worked for 1m 59s
+
+
+
+This brief is based solely on the PRD in this chat; I did not treat the attached PDF as instructions. It deliberately narrows the UX to one configured state/service workflow at launch—“every document” is not a credible MVP interaction model.
+Civic Agent — Product Design Brief
+1. Design principles
+1. The citizen stays in charge of consequential actions.
+   Submission, payments, declarations, OTPs, e-signs, document sharing, and calls always use a distinct confirmation moment. The interface must never disguise an irreversible action as “Continue.”
+2. Make government process understandable, not merely automated.
+   Every status must distinguish official portal information from the agent’s explanation. Use direct, plain language: “The portal says: Under review” and “What this means: no action is needed today.”
+3. Design for low confidence, not low intelligence.
+   One task per screen, spoken-language-first input, large targets, predictable progress, and no bureaucratic jargon. The tone is respectful and adult—not paternalistic or overly cheerful.
+2. Visual direction
+Mood: calm, dignified, practical, and reassuring—more like a well-run public-service desk than a fintech dashboard or AI chat toy.
+
+Reference behaviors:
+- WhatsApp-style voice recording: familiar, prominent, and easy to cancel.
+- A railway/boarding-pass-style acknowledgement: receipt number, date, service, and next action are instantly scannable.
+- A clinic check-in flow: one clear step at a time, with visible reassurance about what happens next.
+Avoid:
+- A chatbot-only interface. Civic work needs timelines, receipts, consent records, and explicit action states—not a long conversational transcript.
+- Tricolor decoration, seals, or visual styling that could imply government affiliation.
+- Tiny dense forms copied from government portals.
+- Celebration confetti or “application guaranteed” language.
+- Red/green-only status signals.
+3. Design tokens
+Color palette
+Token	Hex	Usage
+Ink / Primary	#0B3A53	Primary buttons, headings, high-trust navigation
+Teal / Progress	#005B50	Completed steps, verified states, successful actions
+Saffron / Attention	#A94600	Pending citizen action, cautionary emphasis
+Error	#A61B1B	Rejections, upload failures, unsafe actions
+Link / Focus	#005EA8	Links, focus rings, selected controls
+Canvas	#FFFDF8	Main page background; warmer than stark white
+Surface	#F2EFE8	Grouped sections, inactive timeline areas
+Border	#D6D2C9	Dividers and input boundaries
+Text	#18212B	Primary text
+Muted text	#4B5563	Supporting text, timestamps, metadata
+
+
+The blue-green palette signals reliability without resembling a bank or a political party. Warm paper surfaces reduce the harshness of long, document-heavy tasks. All chosen action colors pass normal-text contrast requirements against white or canvas backgrounds.
+Typography
+Font family: Noto Sans for Latin scripts, with the corresponding Noto family for Indian scripts, beginning with Noto Sans Devanagari.
+
+This is a deliberate accessibility choice: it is highly legible at small sizes, supports Indian-language rendering properly, and avoids font fallback that makes Hindi labels visually inconsistent.
+Token	Size / line height	Use
+Display	32 / 40	Welcome and confirmation moments
+H1	24 / 32	Screen title
+H2	20 / 28	Major section title
+H3	18 / 26	Card and action title
+Body large	18 / 28	Instructions and user-facing status
+Body	16 / 24	Default content
+Label	14 / 20	Form labels and metadata
+Caption	12 / 16	Non-critical timestamps only
+
+
+Use 400, 500, 600, and 700 weights. Do not put critical information below 14 px. Indian-script content uses at least 1.55 line-height.
+Spacing, shape, elevation
+- Spacing: 4, 8, 12, 16, 24, 32, 40, 48, 64
+- Touch targets: minimum 48 × 48 px
+- Input/button radius: 10 px
+- Cards: 12 px
+- Sheets/modals: 16 px
+- Default elevation: none; use borders first.
+- Low shadow: 0 1px 2px rgba(24, 33, 43, 0.10)
+- Modal shadow: 0 12px 32px rgba(24, 33, 43, 0.18)
+Minimal elevation prevents the interface from feeling like a pile of competing cards.
+4. Screen inventory
+Citizen experience
+Screen	Purpose
+Language and access	Choose language, explain the service, start securely
+Phone verification	Confirm ownership of the contact channel
+Home / My applications	See current cases and next required action
+Voice request	Explain the need by voice or text
+Transcript review	Correct what the agent heard
+Service match	Confirm the specific service or explain unsupported scope
+Eligibility and document checklist	Explain requirements before requesting data
+Document permission	Ask what may be used, where, and why
+Document capture	Camera, file, gallery, or assisted upload
+Document review	Show quality checks, mismatches, and remediation
+Application review	Review citizen-confirmed answers and attachments
+Action confirmation	Reusable confirmation sheet for submission, payment, calls, declarations
+Agent progress	Show live portal work in understandable steps
+OTP/payment handoff	Pause for citizen-controlled portal verification or payment
+Submission receipt	Show acknowledgement number and proof
+Application detail	Timeline, current official status, next action, documents used
+Status result	Show latest portal status and plain-language explanation
+Follow-up call approval	Review, edit if permitted, and approve a call script
+Call outcome	Summarize outcome and next action
+Privacy and consent centre	Review, revoke, or delete future-access permissions
+Help and human handoff	Request assistance or view official alternatives
+
+
+Internal operations experience
+Screen	Purpose
+Case queue	Surface failed, stalled, and low-confidence cases without exposing unnecessary data
+Case review	Diagnose automation failure and send a citizen-safe next step
+Service configuration	Maintain state/service requirements, portal allowlist, SLA, and escalation policy
+
+
+5. User flows
+A. Start a government-service request
+1. Citizen chooses Hindi or English and verifies their phone number.
+2. They tap Speak your request and describe the need.
+3. The agent displays a transcript and asks for correction.
+4. The agent proposes a specific service and jurisdiction.
+5. Citizen confirms the service or chooses “This is not right.”
+6. The product displays eligibility, required documents, expected fee, and likely processing time.
+7. Citizen chooses Start checklist.
+If unsupported, the flow ends before documents are requested and provides the official portal/contact path.
+B. Provide documents safely
+1. Citizen reviews why each document is needed and where it will be used.
+2. They grant permission for individual documents—not a blanket upload permission.
+3. They scan, upload, or select a document.
+4. The product checks legibility, page completeness, expiry, and obvious mismatch.
+5. Citizen reviews the detected document type and corrections.
+6. The checklist updates only after the citizen confirms the document is correct.
+C. Complete and submit an application
+1. Citizen reviews agent-filled answers in plain language.
+2. They expand any field to edit it.
+3. The system states what will happen: portal, attachments, declaration, fee, and submission.
+4. Citizen taps Review submission.
+5. A separate confirmation sheet requires explicit approval.
+6. The agent begins portal work and displays step-by-step progress.
+7. If OTP, CAPTCHA, e-sign, payment, or unexpected portal content appears, the agent pauses.
+8. Citizen completes the required official action.
+9. The agent submits after a final submission confirmation.
+10. The receipt screen presents the acknowledgement number and receipt file.
+D. Track an application
+1. Citizen opens My applications or taps a status notification.
+2. The application detail screen shows official status, last checked time, and a plain-language explanation.
+3. If citizen action is required, the action card appears before the timeline.
+4. If no action is required, the primary action is Check status now.
+5. The product records the check and updates the next expected date.
+E. Follow up on a stalled case
+1. The product detects that the published SLA has passed or status has not changed for the configured threshold.
+2. Citizen receives a notification: “Your application appears delayed. Review a follow-up call.”
+3. They review who will be called, the approved script, and information that may be shared.
+4. Citizen confirms the call immediately before dialing.
+5. The voice agent introduces itself as an automated assistant acting with citizen authorization.
+6. After the call, the product shows the outcome, official response, and recommended next action.
+7. If the call is unsafe, inconclusive, or requests unofficial payment, the product stops escalation and flags the issue.
+F. Withdraw access or ask for help
+1. Citizen opens Privacy and consent or Get help.
+2. They see active permissions per application.
+3. They can pause tracking, revoke future document use, or request deletion.
+4. The product clearly distinguishes what can be deleted locally from what was already submitted to a government portal.
+5. For help, they can request support without exposing new documents by default.
+6. Per-screen layout
+Screen	Layout and hierarchy	Primary action	Core components
+Language and access	Language first, short trust statement, privacy link, accessible language switcher	Continue	Language picker, progress-free header
+Home	“Needs your action” first; active applications; completed history last	Start a request	Case cards, status chips, persistent help button
+Voice request	One prompt, large microphone, text fallback, example prompts	Hold to speak / Start recording	Voice recorder, waveform, transcript preview
+Transcript review	Transcript first; highlighted uncertain words; short clarification questions	Confirm request	Editable transcript, confidence highlight, chip answers
+Service match	Proposed service, state, why it matches, official portal identity	Yes, this is my service	Service card, confidence note, alternate path
+Checklist	Required documents, fee, time estimate, “why needed” disclosure	Share documents	Checklist rows, disclosure drawer, stepper
+Document capture	Chosen document title, camera/file options, quality tips	Capture / Upload	Upload zone, camera launcher, progress bar
+Document review	Clear issue title, document preview, exact fix, alternatives	Use this document	Issue card, preview, replace control
+Application review	Plain-language answer groups; documents; edit links; declarations and fees last	Review submission	Summary groups, field editor, document rows
+Action confirmation	What happens, what is shared, irreversible consequence, cancel first	Confirm and continue	Confirmation sheet, consent checkbox where legally needed
+Agent progress	Current step at top, simple completed/pending timeline, expandable redacted details	Pause agent	Status timeline, progress state, support link
+OTP/payment handoff	Explain why user action is needed; show only official destination	I’ve completed this	Secure handoff card, timeout notice
+Receipt	Success state, acknowledgement number, receipt, next expected date	Track application	Receipt card, download/share, timeline preview
+Application detail	Current action first; official status; timeline; documents; consent footer	Check status now	Status banner, timeline, expandable records
+Follow-up call approval	Reason for delay, number/office identity, script, data to be shared	Approve and call	Script viewer, consent summary, edit option
+Call outcome	What happened, exact official outcome, next step, no inferred promises	View application	Outcome card, follow-up scheduler
+Privacy and consent	Active permissions grouped by purpose; revocation impact before destructive action	Manage permission	Consent rows, revoke sheet, audit timeline
+Help and handoff	Immediate safe options, human support request, official contacts	Request help	Contact choices, issue selector
+Operator queue	Urgency, reason, minimal identifying data, SLA	Open case	Filter chips, queue table
+Operator case review	Failure evidence, approved remediation options, citizen communication preview	Send next step	Redacted evidence, action composer, audit trail
+
+
+7. Component library
+Component	Variants	States
+Primary button	Primary, secondary, destructive, text link	Default, hover, pressed, focus, disabled, loading
+Voice control	Tap-to-record, press-and-hold, playing back	Idle, recording, processing, permission denied, error
+Case card	Needs action, in progress, delayed, complete, unsupported	Default, selected, loading, offline snapshot
+Status badge	Action required, in progress, submitted, delayed, complete, rejected	Text plus icon; never color-only
+Service card	Supported, unsupported, needs clarification	Default, selected, low confidence
+Checklist row	Required, optional, complete, blocked	Empty, uploading, verified, issue found
+Document tile	ID proof, address proof, income proof, generic attachment	Empty, selected, uploading, review needed, accepted, rejected
+Consent disclosure	Document use, tracking, calling, audio retention	Unread, acknowledged, granted, revoked, expired
+Stepper/timeline	Intake, documents, submission, tracking, escalation	Current, complete, blocked, delayed, skipped
+Form field	Text, date, select, address, radio, upload	Default, filled, focus, validation error, disabled, read-only
+Confirmation sheet	Submission, call, declaration, payment redirection	Ready, pending confirmation, confirmed, cancelled
+Official-status block	Portal status, last checked, source	Fresh, stale, unavailable, conflicting
+Notice banner	Info, action needed, warning, error, success	Dismissible only when non-critical
+Receipt card	Submitted application proof	Loading, available, download failure
+Script viewer	View-only, editable citizen note	Draft, approved, call active, completed
+Empty state	No cases, no supported service, no history	Neutral, guided recovery
+Error recovery card	Retry, save and exit, request help	Retryable, non-retryable, escalated
+
+
+8. Key screen states
+Screen	Empty	Loading	Error	Success	Offline
+Home	“No applications yet” with one start action	Skeleton case cards	Retry status sync; retain visible cached cases	Updated case list	Show last synced time; allow read-only review
+Voice request	Prompt plus examples	“Listening” or “Understanding…”	Offer retry and text entry	Transcript ready	Let citizen type; do not silently retain audio
+Service match	Not applicable	Matching service	“We could not identify this safely”	Confirmed service and checklist	Show saved intake; defer matching
+Checklist	Required list before uploads	Requirements refreshing	Configuration unavailable; do not ask for documents	Complete checklist	Show cached checklist marked “not verified”
+Document capture	Empty upload area	Local processing/uploading	Explain exact issue and keep original locally only with consent	Document accepted	Queue encrypted upload only after citizen confirms
+Review and confirmation	No submission review until required fields complete	Preparing review	Missing or conflicting data	Confirmation recorded	Read-only draft; submission unavailable
+Agent progress	Not applicable	Current portal step and elapsed time	Stop safely; preserve draft and explain next step	Receipt retrieved	Explain that server-side run may continue; do not imply completion
+Receipt	Not applicable	Retrieving acknowledgement	Receipt unavailable; show portal result without inventing number	Number, timestamp, receipt file	Display locally saved receipt if available
+Application detail	No tracked cases	Checking official portal	Status check failed; show last known official result	Updated official status	Cached timeline with “last checked” timestamp
+Call approval/outcome	No eligible call yet	Preparing approved script/dialing	Call failed or unsafe response	Outcome and next action	Cannot initiate a call; preserve draft only
+Consent centre	No active permissions	Fetching consent history	History temporarily unavailable	Permission changed with audit event	Show last synced permissions; revocation requires connection
+
+
+9. Responsive behaviour
+Mobile: 360–599 px
+- Default experience; one-column layout.
+- Persistent bottom primary action, above browser safe-area controls.
+- One decision per viewport. Long summaries use expandable sections.
+- Full-screen sheets for submission, payment, and consent confirmation.
+- Document capture launches camera directly; no hover interactions.
+- Portal automation is represented as a clear status timeline, not a tiny remote-browser view.
+Tablet: 600–1023 px
+- Two-pane layouts for document review and application details.
+- Left pane holds the checklist/timeline; right pane holds active content.
+- Confirmation actions remain centrally focused and cannot be hidden in a side panel.
+Desktop: 1024 px and above
+- Three-region case workspace: navigation, application timeline, contextual detail.
+- Operators may see queue and case pane together.
+- Citizens see more history and document context, but destructive actions remain in a constrained centered confirmation sheet.
+- Never use desktop width to make forms denser than the reading-friendly 640–720 px form column.
+10. Accessibility
+- All normal text must meet 4.5:1 contrast minimum; large text, icons, and focus indicators meet 3:1 minimum. Critical labels use 4.5:1 regardless of size.
+- Every status uses text plus icon and shape—not color alone.
+- Minimum interactive target: 48 × 48 px.
+- Support browser zoom to 200% without lost content or horizontal scrolling at 320 px width.
+- Voice is optional input, never the only input. Every voice action has a text alternative.
+- Apply lang="hi" or the appropriate language attribute to Indian-language content so screen readers select the correct pronunciation.
+- Focus order follows visual/task order: page title → instructions → form controls → help → primary action. Modal focus is trapped; closing returns focus to the invoking control.
+- Keyboard support: Tab/Shift+Tab, Enter/Space for controls, Escape for dismissible sheets, and visible skip-to-content links.
+- Use semantic landmarks, native buttons/inputs, labeled fieldsets for consent, aria-current="step" for progress, aria-live="polite" for non-critical updates, and role="alert" for blocking failures.
+- Voice waveforms are decorative and aria-hidden; the recording state is exposed as text.
+- Document thumbnails include meaningful labels but never expose sensitive numbers in alt text.
+- Error summaries link to the invalid field; each field uses aria-describedby for help and error text.
+- Motion is limited and respects prefers-reduced-motion; progress should never rely on animation alone.

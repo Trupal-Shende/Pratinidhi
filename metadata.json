@@ -1,0 +1,10 @@
+{
+  "name": "JanSeva Civic Agent",
+  "description": "Consent-first personal civic agent for Indian citizens to navigate government services, voice-led intake in Hindi and English, document validation, and portal tracking.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
