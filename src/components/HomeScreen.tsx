@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ApplicationCase, Language } from '../types/civic';
 import {
   Mic,
@@ -34,9 +34,22 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onSelectApplication,
   onViewServiceCatalog,
 }) => {
-  const needsActionApps = applications.filter((app) => app.status === 'needs_action' || app.urgency === 'high');
-  const activeApps = applications.filter((app) => app.status === 'in_progress');
-  const completedApps = applications.filter((app) => app.status === 'submitted' || app.status === 'completed');
+  // ⚡ Bolt: Memoize filtered arrays to avoid unnecessary recalculations on re-renders
+  // Reduces the need to re-filter the full applications array unless it actually changes.
+  const needsActionApps = useMemo(
+    () => applications.filter((app) => app.status === 'needs_action' || app.urgency === 'high'),
+    [applications]
+  );
+
+  const activeApps = useMemo(
+    () => applications.filter((app) => app.status === 'in_progress'),
+    [applications]
+  );
+
+  const completedApps = useMemo(
+    () => applications.filter((app) => app.status === 'submitted' || app.status === 'completed'),
+    [applications]
+  );
 
   const getStatusBadge = (status: ApplicationCase['status']) => {
     switch (status) {
