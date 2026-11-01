@@ -1,6 +1,6 @@
 {
-  "name": "JanSeva Civic Agent",
-  "description": "Consent-first personal civic agent for Indian citizens to navigate government services, voice-led intake in Hindi and English, document validation, and portal tracking.",
+  "name": "Pratinidhi",
+  "description": "Voice-first civic service for keypad mobiles and companion web app with SMS receipts, per-case DigiLocker consent, and rejection recovery across India.",
   "requestFramePermissions": [
     "microphone"
   ],

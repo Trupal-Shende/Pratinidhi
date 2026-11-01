@@ -1,0 +1,246 @@
+{
+  "entities": {
+    "Application": {
+      "title": "Application",
+      "description": "A citizen's government service application with masked PII, document verification metadata, audit trail, and follow-up call records.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128,
+          "description": "Unique identifier for the application."
+        },
+        "userId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128,
+          "description": "Firebase Auth UID of the citizen who owns this application."
+        },
+        "applicantName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "description": "Name of the citizen applicant."
+        },
+        "phone": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 40,
+          "description": "Masked phone number of the citizen (e.g., +91 98*** **312)."
+        },
+        "phoneMasked": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 40,
+          "description": "Masked phone display string."
+        },
+        "aadhaarMasked": {
+          "type": "string",
+          "maxLength": 30,
+          "description": "Masked Aadhaar number (e.g., XXXX XXXX 4312)."
+        },
+        "preferredLanguage": {
+          "type": "string",
+          "enum": ["hi", "en", "mr"],
+          "maxLength": 10,
+          "description": "Citizen's preferred UI language."
+        },
+        "serviceId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 80,
+          "description": "Identifier of the civic service from the catalog."
+        },
+        "serviceName": {
+          "type": "object",
+          "description": "Localized name of the government service."
+        },
+        "state": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "Indian State or Union Territory jurisdiction."
+        },
+        "portalName": {
+          "type": "string",
+          "maxLength": 160,
+          "description": "Official state portal name."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["needs_action", "in_progress", "submitted", "delayed", "completed"],
+          "maxLength": 30,
+          "description": "Current lifecycle status of the application."
+        },
+        "statusText": {
+          "type": "object",
+          "description": "Localized official status text."
+        },
+        "officialStatusText": {
+          "type": "object",
+          "description": "Localized official portal status text."
+        },
+        "plainExplanation": {
+          "type": "object",
+          "description": "Localized plain-language explanation of the status."
+        },
+        "acknowledgementNumber": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "Official government portal receipt/acknowledgement number."
+        },
+        "submittedAt": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "ISO timestamp when the application was submitted."
+        },
+        "lastCheckedAt": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "ISO timestamp when status was last checked."
+        },
+        "nextActionDate": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Next action deadline or SLA description."
+        },
+        "urgency": {
+          "type": "string",
+          "enum": ["normal", "high"],
+          "maxLength": 16,
+          "description": "Urgency level of the application."
+        },
+        "documents": {
+          "type": "array",
+          "description": "Bounded list of attached document metadata (max 20)."
+        },
+        "auditTrail": {
+          "type": "array",
+          "description": "Bounded list of immutable audit trail entries (max 50)."
+        },
+        "followUpCalls": {
+          "type": "array",
+          "description": "Bounded list of government follow-up voice call logs (max 20)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "applicantName",
+        "phone",
+        "preferredLanguage",
+        "serviceId",
+        "serviceName",
+        "state",
+        "portalName",
+        "status",
+        "statusText",
+        "plainExplanation",
+        "lastCheckedAt",
+        "urgency",
+        "documents",
+        "auditTrail",
+        "followUpCalls",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ApplicationDocument": {
+      "title": "ApplicationDocument",
+      "description": "A document metadata record in the documents subcollection of an application.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128,
+          "description": "Document ID."
+        },
+        "userId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128,
+          "description": "Owner Firebase Auth UID."
+        },
+        "applicationId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128,
+          "description": "Parent application ID."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "description": "Document display name."
+        },
+        "fileName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "description": "Uploaded file name."
+        },
+        "verified": {
+          "type": "boolean",
+          "description": "Whether the document passed quality verification."
+        },
+        "qualityScore": {
+          "type": "number",
+          "description": "Quality score from 0 to 100."
+        },
+        "consentedForPortal": {
+          "type": "boolean",
+          "description": "Whether the citizen explicitly consented to share with the portal."
+        },
+        "uploadedAt": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "ISO timestamp of upload."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of update."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "applicationId",
+        "name",
+        "fileName",
+        "verified",
+        "qualityScore",
+        "consentedForPortal",
+        "uploadedAt",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/applications/{applicationId}": {
+      "schema": { "$ref": "#/entities/Application" },
+      "description": "Top-level collection storing citizen applications isolated by userId."
+    },
+    "/applications/{applicationId}/documents/{documentId}": {
+      "schema": { "$ref": "#/entities/ApplicationDocument" },
+      "description": "Subcollection storing verified document metadata inheriting parent application permissions."
+    }
+  }
+}

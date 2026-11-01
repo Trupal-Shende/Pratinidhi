@@ -1,0 +1,250 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Reusable Hardened Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidLocalizedText(obj) {
+      return obj is map
+        && obj.keys().hasAll(['en', 'hi'])
+        && obj.keys().hasOnly(['en', 'hi', 'mr'])
+        && obj.en is string && obj.en.size() <= 1000
+        && obj.hi is string && obj.hi.size() <= 1000
+        && (!('mr' in obj) || (obj.mr is string && obj.mr.size() <= 1000));
+    }
+
+    function isValidApplication(data) {
+      return data.keys().hasAll([
+          'id',
+          'userId',
+          'applicantName',
+          'phone',
+          'preferredLanguage',
+          'serviceId',
+          'serviceName',
+          'state',
+          'portalName',
+          'status',
+          'statusText',
+          'plainExplanation',
+          'lastCheckedAt',
+          'urgency',
+          'documents',
+          'auditTrail',
+          'followUpCalls',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id',
+          'userId',
+          'applicantName',
+          'phone',
+          'phoneMasked',
+          'aadhaarMasked',
+          'preferredLanguage',
+          'serviceId',
+          'serviceName',
+          'state',
+          'portalName',
+          'status',
+          'statusText',
+          'officialStatusText',
+          'plainExplanation',
+          'acknowledgementNumber',
+          'submittedAt',
+          'lastCheckedAt',
+          'nextActionDate',
+          'urgency',
+          'documents',
+          'auditTrail',
+          'followUpCalls',
+          'createdAt',
+          'updatedAt'
+        ])
+        && isValidId(data.id)
+        && data.userId == request.auth.uid
+        && data.applicantName is string && data.applicantName.size() >= 1 && data.applicantName.size() <= 120
+        && data.phone is string && data.phone.size() >= 4 && data.phone.size() <= 40
+        && (!('phoneMasked' in data) || (data.phoneMasked is string && data.phoneMasked.size() >= 4 && data.phoneMasked.size() <= 40))
+        && (!('aadhaarMasked' in data) || (data.aadhaarMasked is string && data.aadhaarMasked.size() <= 30))
+        && data.preferredLanguage in ['hi', 'en', 'mr']
+        && isValidId(data.serviceId)
+        && isValidLocalizedText(data.serviceName)
+        && data.state is string && data.state.size() >= 1 && data.state.size() <= 80
+        && data.portalName is string && data.portalName.size() >= 1 && data.portalName.size() <= 160
+        && data.status in ['needs_action', 'in_progress', 'submitted', 'delayed', 'completed']
+        && isValidLocalizedText(data.statusText)
+        && (!('officialStatusText' in data) || isValidLocalizedText(data.officialStatusText))
+        && isValidLocalizedText(data.plainExplanation)
+        && (!('acknowledgementNumber' in data) || (data.acknowledgementNumber is string && data.acknowledgementNumber.size() <= 80))
+        && (!('submittedAt' in data) || (data.submittedAt is string && data.submittedAt.size() <= 64))
+        && data.lastCheckedAt is string && data.lastCheckedAt.size() <= 64
+        && (!('nextActionDate' in data) || (data.nextActionDate is string && data.nextActionDate.size() <= 120))
+        && data.urgency in ['normal', 'high']
+        && data.documents is list && data.documents.size() <= 20
+        && (data.documents.size() == 0 || data.documents[0] is map)
+        && data.auditTrail is list && data.auditTrail.size() <= 50
+        && (data.auditTrail.size() == 0 || data.auditTrail[0] is map)
+        && data.followUpCalls is list && data.followUpCalls.size() <= 20
+        && (data.followUpCalls.size() == 0 || data.followUpCalls[0] is map)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidApplicationDocument(data, applicationId) {
+      return data.keys().hasAll([
+          'id',
+          'userId',
+          'applicationId',
+          'name',
+          'fileName',
+          'verified',
+          'qualityScore',
+          'consentedForPortal',
+          'uploadedAt',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id',
+          'userId',
+          'applicationId',
+          'name',
+          'fileName',
+          'verified',
+          'qualityScore',
+          'consentedForPortal',
+          'uploadedAt',
+          'createdAt',
+          'updatedAt'
+        ])
+        && isValidId(data.id)
+        && data.userId == request.auth.uid
+        && data.applicationId == applicationId
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 120
+        && data.fileName is string && data.fileName.size() >= 1 && data.fileName.size() <= 160
+        && data.verified is bool
+        && data.qualityScore is number && data.qualityScore >= 0 && data.qualityScore <= 100
+        && data.consentedForPortal is bool
+        && data.uploadedAt is string && data.uploadedAt.size() <= 64
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    match /applications/{applicationId} {
+      allow get: if isSignedIn() && isValidId(applicationId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+
+      allow create: if isVerifiedUser()
+        && isValidId(applicationId)
+        && incoming().id == applicationId
+        && isValidApplication(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser()
+        && isValidId(applicationId)
+        && isValidApplication(incoming())
+        && existing().userId == request.auth.uid
+        && existing().status != 'completed'
+        && incoming().id == existing().id
+        && incoming().userId == existing().userId
+        && incoming().serviceId == existing().serviceId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Action 1: Update status, follow-up calls, documents, or audit trail
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'status',
+            'statusText',
+            'officialStatusText',
+            'plainExplanation',
+            'acknowledgementNumber',
+            'submittedAt',
+            'lastCheckedAt',
+            'nextActionDate',
+            'urgency',
+            'documents',
+            'auditTrail',
+            'followUpCalls',
+            'updatedAt'
+          ])
+        );
+
+      allow delete: if isVerifiedUser()
+        && isValidId(applicationId)
+        && existing().userId == request.auth.uid;
+
+      // Documents Subcollection — Inherits parent permissions via Master Gate
+      match /documents/{documentId} {
+        allow get: if isSignedIn()
+          && isValidId(applicationId)
+          && isValidId(documentId)
+          && existing().userId == request.auth.uid
+          && get(/databases/$(database)/documents/applications/$(applicationId)).data.userId == request.auth.uid;
+
+        allow list: if isSignedIn()
+          && existing().userId == request.auth.uid;
+
+        allow create: if isVerifiedUser()
+          && isValidId(applicationId)
+          && isValidId(documentId)
+          && incoming().id == documentId
+          && isValidApplicationDocument(incoming(), applicationId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && exists(/databases/$(database)/documents/applications/$(applicationId))
+          && get(/databases/$(database)/documents/applications/$(applicationId)).data.userId == request.auth.uid;
+
+        allow update: if isVerifiedUser()
+          && isValidId(applicationId)
+          && isValidId(documentId)
+          && isValidApplicationDocument(incoming(), applicationId)
+          && existing().userId == request.auth.uid
+          && incoming().id == existing().id
+          && incoming().userId == existing().userId
+          && incoming().applicationId == existing().applicationId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'verified',
+            'qualityScore',
+            'consentedForPortal',
+            'updatedAt'
+          ])
+          && get(/databases/$(database)/documents/applications/$(applicationId)).data.userId == request.auth.uid;
+
+        allow delete: if isVerifiedUser()
+          && isValidId(applicationId)
+          && isValidId(documentId)
+          && existing().userId == request.auth.uid
+          && get(/databases/$(database)/documents/applications/$(applicationId)).data.userId == request.auth.uid;
+      }
+    }
+  }
+}
