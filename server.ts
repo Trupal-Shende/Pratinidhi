@@ -4,6 +4,7 @@
  */
 
 import express, { Request, Response } from 'express';
+import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { CIVIC_SERVICES, classifyCitizenIntent, validateDocumentQuality } from './src/services/civicCatalog.ts';
 
@@ -12,6 +13,17 @@ dotenv.config();
 const app = express();
 const port = parseInt(process.env.PORT || '3000', 10);
 
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:"],
+      connectSrc: ["'self'"],
+    },
+  },
+}));
 app.use(express.json());
 
 // In-memory seed database matching PRD Personas & Applications
