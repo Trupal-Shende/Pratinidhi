@@ -79,7 +79,10 @@ export const ApplicationReviewModal: React.FC<ApplicationReviewModalProps> = ({
       },
       submittedAt: new Date().toISOString(),
       lastCheckedAt: new Date().toISOString(),
-      nextActionDate: `${service.estimatedDays} days SLA`,
+      nextActionDate:
+        language === 'hi'
+          ? `${service.estimatedDays} कार्य दिवस`
+          : `${service.estimatedDays} days SLA`,
       urgency: 'normal',
       documents: Object.values(uploadedDocs).map((doc) => ({
         id: `doc-${Date.now()}-${doc.requirementId}`,
