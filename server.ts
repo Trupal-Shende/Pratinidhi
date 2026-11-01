@@ -3,8 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
+import multer from 'multer';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import { transcribeWithGroqNode } from './transcribe';
 import { CIVIC_SERVICES, classifyCitizenIntent, validateDocumentQuality } from './src/services/civicCatalog.ts';
 
 dotenv.config();
@@ -12,11 +16,60 @@ dotenv.config();
 const app = express();
 const port = parseInt(process.env.PORT || '3000', 10);
 
-app.use(express.json());
+// FINDING 5: Security Headers & Fingerprinting Protection
+app.disable('x-powered-by');
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // Allows Vite SPA to run locally
+    frameguard: { action: 'deny' },
+  })
+);
+
+app.use(express.json({ limit: '1mb' }));
+
+// FINDING 4: Rate Limiting for AI Endpoints
+const aiLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 15, // max 15 requests per minute per IP
+  message: { error: 'Too many requests. Please wait a moment before trying again.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// FINDING 1: Hardened Multer Configuration (10MB limit + MIME type filtering)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['audio/wav', 'audio/wave', 'audio/webm', 'audio/ogg', 'audio/mpeg', 'audio/mp4', 'audio/x-m4a'];
+    if (allowed.includes(file.mimetype) || file.mimetype.startsWith('audio/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file format. Only valid audio files are permitted.'));
+    }
+  },
+});
+
+// FINDING 2: Auth Middleware — checks Bearer token and stamps authenticated user
+interface AuthedRequest extends Request {
+  user?: { id: string };
+}
+
+const requireAuth = (req: AuthedRequest, res: Response, next: NextFunction): void => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || authHeader !== 'Bearer demo-user-token') {
+    res.status(401).json({ error: 'Unauthorized: valid Bearer token required' });
+    return;
+  }
+  // Authenticated identity — swap for decoded JWT in production
+  req.user = { id: 'citizen-1' };
+  next();
+};
 
 // In-memory seed database matching PRD Personas & Applications
 interface StoredApplication {
   id: string;
+  userId: string;
   applicantName: string;
   phoneMasked: string;
   preferredLanguage: 'hi' | 'en';
@@ -55,6 +108,7 @@ interface StoredApplication {
 const mockApplications: StoredApplication[] = [
   {
     id: 'app-savitri-2026',
+    userId: 'citizen-1',
     applicantName: 'Savitri Devi (सावित्री देवी)',
     phoneMasked: '+91 98*** **312',
     preferredLanguage: 'hi',
@@ -129,6 +183,7 @@ const mockApplications: StoredApplication[] = [
   },
   {
     id: 'app-imran-2026',
+    userId: 'citizen-1',
     applicantName: 'Imran Khan (इमरान खान)',
     phoneMasked: '+91 94*** **884',
     preferredLanguage: 'en',
@@ -201,27 +256,65 @@ app.get('/api/services', (_req: Request, res: Response) => {
   res.json({ success: true, services: CIVIC_SERVICES });
 });
 
-// API: Voice & Text Intake Intent Parser
-app.post('/api/intake/parse', (req: Request, res: Response) => {
+// FINDING 6: Input Validation on Intent Parsing with Rate Limiting
+app.post('/api/intake/parse', aiLimiter, (req: Request, res: Response) => {
   const { text, state } = req.body || {};
-  if (!text || typeof text !== 'string') {
-    res.status(400).json({ error: 'Text prompt is required for intent parsing' });
+  if (!text || typeof text !== 'string' || text.length > 1000) {
+    res.status(400).json({ error: 'Text prompt must be a string under 1,000 characters.' });
     return;
   }
   const result = classifyCitizenIntent(text, state || 'Uttar Pradesh');
   res.json({ success: true, result });
 });
 
-// API: Applications List
-app.get('/api/applications', (_req: Request, res: Response) => {
-  res.json({ success: true, applications: mockApplications });
+// FINDING 1 & 7: Protected Transcription Route with Rate Limiting and Sanitized Error Responses
+app.post(
+  '/api/transcribe',
+  requireAuth,
+  aiLimiter,
+  upload.single('audio'),
+  async (req: Request, res: Response) => {
+    try {
+      if (!req.file) {
+        res.status(400).json({ error: 'No audio file uploaded.' });
+        return;
+      }
+
+      const text = await transcribeWithGroqNode(req.file.buffer);
+      res.json({ success: true, text });
+    } catch (error: any) {
+      console.error('[Transcription Error]:', error?.message || error);
+      res.status(500).json({ error: 'Transcription service temporarily unavailable.' });
+    }
+  }
+);
+
+// FINDING 3: Strict Multi-Tenant Isolation (No Bypass Allowed)
+app.get('/api/applications', requireAuth, (req: AuthedRequest, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+  const userApplications = mockApplications.filter((app) => app.userId === userId);
+  res.json({ success: true, applications: userApplications });
 });
 
-// API: Create new Application
-app.post('/api/applications', (req: Request, res: Response) => {
+// FINDING 6: Input Validation on Application Creation
+app.post('/api/applications', requireAuth, (req: AuthedRequest, res: Response) => {
   const { serviceId, applicantName, phoneMasked, preferredLanguage, documents } = req.body || {};
-  const service = CIVIC_SERVICES.find((s) => s.id === serviceId);
 
+  if (
+    !applicantName ||
+    typeof applicantName !== 'string' ||
+    applicantName.trim().length === 0 ||
+    applicantName.length > 100
+  ) {
+    res.status(400).json({ error: 'Invalid applicantName (must be 1-100 characters).' });
+    return;
+  }
+
+  const service = CIVIC_SERVICES.find((s) => s.id === serviceId);
   if (!service) {
     res.status(400).json({ error: 'Invalid or unsupported service ID' });
     return;
@@ -229,9 +322,10 @@ app.post('/api/applications', (req: Request, res: Response) => {
 
   const newApp: StoredApplication = {
     id: `app-${Date.now()}`,
-    applicantName: applicantName || 'Citizen Applicant',
-    phoneMasked: phoneMasked || '+91 98*** **000',
-    preferredLanguage: preferredLanguage || 'en',
+    userId: req.user?.id || 'citizen-1',
+    applicantName: applicantName.trim(),
+    phoneMasked: typeof phoneMasked === 'string' && phoneMasked.length <= 20 ? phoneMasked : '+91 98*** **000',
+    preferredLanguage: preferredLanguage === 'hi' ? 'hi' : 'en',
     serviceId: service.id,
     serviceName: service.name,
     state: service.state,
@@ -248,7 +342,7 @@ app.post('/api/applications', (req: Request, res: Response) => {
     submittedAt: undefined,
     lastCheckedAt: new Date().toISOString(),
     urgency: 'normal',
-    documents: documents || [],
+    documents: Array.isArray(documents) ? documents.slice(0, 10) : [],
     auditTrail: [
       {
         id: `aud-${Date.now()}`,
@@ -293,7 +387,7 @@ async function startServer() {
   }
 
   app.listen(port, '0.0.0.0', () => {
-    console.log(`JanSeva Civic Agent server running on http://0.0.0.0:${port}`);
+    console.log(`\n  ➜  Local:   http://localhost:${port}\n  ➜  Network: http://127.0.0.1:${port}\n`);
   });
 }
 
