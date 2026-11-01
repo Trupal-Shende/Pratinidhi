@@ -63,9 +63,17 @@ export const ServiceCatalogModal: React.FC<ServiceCatalogModalProps> = ({
                 </div>
                 <div className="text-right sm:shrink-0 text-xs text-[#4B5563]">
                   <span className="font-semibold text-[#18212B] block">
-                    {srv.officialFee === 0 ? '₹0 (Free)' : `Fee: ₹${srv.officialFee}`}
+                    {srv.officialFee === 0
+                      ? language === 'hi'
+                        ? '₹0 (निःशुल्क)'
+                        : '₹0 (Free)'
+                      : language === 'hi'
+                      ? `शुल्क: ₹${srv.officialFee}`
+                      : `Fee: ₹${srv.officialFee}`}
                   </span>
-                  <span>{srv.estimatedDays} days SLA</span>
+                  <span>
+                    {srv.estimatedDays} {language === 'hi' ? 'कार्य दिवस' : 'days SLA'}
+                  </span>
                 </div>
               </div>
 
