@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -94,80 +94,130 @@ export const VoiceIntakeView: React.FC<VoiceIntakeViewProps> = ({
     }
   }, []);
 
-  // Web Speech API ref
-  const recognitionRef = useRef<any>(null);
+  // Audio recording refs
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const animationIntervalRef = useRef<any>(null);
 
-  const startVoiceRecording = () => {
+  // Send audio blob to /api/transcribe backend route
+  const handleAudioRecorded = async (audioBlob: Blob) => {
+    setIsClassifying(true);
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'speech.wav');
+
+    try {
+      const response = await fetch('/api/transcribe', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer demo-user-token',
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+      if (data.success && data.text) {
+        setTranscript(data.text);
+        const result = classifyCitizenIntent(data.text, selectedState);
+        setClassificationResult(result);
+      } else {
+        // Fallback demo text if speech was empty
+        if (!transcript) {
+          const fallbackText =
+            language === 'hi'
+              ? 'मेरी माताजी की वृद्धावस्था पेंशन रुक गई है, उसे दोबारा शुरू करवाना है।'
+              : 'My mother old age pension has stopped. We need to restart it and complete life verification.';
+          setTranscript(fallbackText);
+          const result = classifyCitizenIntent(fallbackText, selectedState);
+          setClassificationResult(result);
+        }
+      }
+    } catch (err) {
+      console.error('Transcription error:', err);
+      if (!transcript) {
+        const fallbackText =
+          language === 'hi'
+            ? 'मेरी माताजी की वृद्धावस्था पेंशन रुक गई है, उसे दोबारा शुरू करवाना है।'
+            : 'My mother old age pension has stopped. We need to restart it and complete life verification.';
+        setTranscript(fallbackText);
+        const result = classifyCitizenIntent(fallbackText, selectedState);
+        setClassificationResult(result);
+      }
+    } finally {
+      setIsClassifying(false);
+    }
+  };
+
+  const startVoiceRecording = async () => {
     setIsRecording(true);
     setClassificationResult(null);
 
     // Audio level simulation animation for accessibility & feedback
-    const interval = setInterval(() => {
+    animationIntervalRef.current = setInterval(() => {
       setAudioLevel(Array.from({ length: 8 }, () => Math.floor(Math.random() * 70) + 10));
     }, 120);
 
-    // Attempt real browser Speech Recognition if supported
-    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (SpeechRec) {
+    // Attempt audio capture via MediaRecorder
+    if (typeof navigator !== 'undefined' && navigator.mediaDevices?.getUserMedia) {
       try {
-        const recognition = new SpeechRec();
-        recognition.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
-        recognition.continuous = false;
-        recognition.interimResults = true;
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioChunksRef.current = [];
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
 
-        recognition.onresult = (event: any) => {
-          let currentTranscript = '';
-          for (let i = 0; i < event.results.length; i++) {
-            currentTranscript += event.results[i][0].transcript;
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            audioChunksRef.current.push(event.data);
           }
-          setTranscript(currentTranscript);
         };
 
-        recognition.onerror = () => {
-          // If microphone is blocked or not available in sandbox, fallback smoothly to text/preset
-          setIsRecording(false);
-          clearInterval(interval);
+        mediaRecorder.onstop = () => {
+          stream.getTracks().forEach((track) => track.stop());
+          const audioBlob = new Blob(audioChunksRef.current, {
+            type: mediaRecorder.mimeType || 'audio/webm',
+          });
+          if (audioBlob.size > 0) {
+            handleAudioRecorded(audioBlob);
+          }
         };
 
-        recognition.onend = () => {
-          setIsRecording(false);
-          clearInterval(interval);
-        };
-
-        recognition.start();
-        recognitionRef.current = { recognition, interval };
+        mediaRecorder.start();
         return;
-      } catch (e) {
-        // Fallback simulation
+      } catch (err) {
+        console.warn('Microphone not accessible, fallback will trigger:', err);
       }
     }
 
-    // Fallback simulation after 3 seconds if Web Speech API isn't triggered
+    // Fallback simulation after 2.8 seconds if mic permission denied or unavailable
     setTimeout(() => {
       setIsRecording(false);
-      clearInterval(interval);
+      if (animationIntervalRef.current) {
+        clearInterval(animationIntervalRef.current);
+      }
       if (!transcript) {
-        setTranscript(
+        const fallbackText =
           language === 'hi'
             ? 'मेरी माताजी की वृद्धावस्था पेंशन रुक गई है, उसे दोबारा शुरू करवाना है।'
-            : 'My mother old age pension has stopped. We need to restart it and complete life verification.'
-        );
+            : 'My mother old age pension has stopped. We need to restart it and complete life verification.';
+        setTranscript(fallbackText);
+        const result = classifyCitizenIntent(fallbackText, selectedState);
+        setClassificationResult(result);
       }
     }, 2800);
   };
 
   const stopVoiceRecording = () => {
     setIsRecording(false);
-    if (recognitionRef.current) {
-      if (recognitionRef.current.recognition) {
-        try {
-          recognitionRef.current.recognition.stop();
-        } catch (e) {}
+    if (animationIntervalRef.current) {
+      clearInterval(animationIntervalRef.current);
+    }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch (e) {
+        console.error(e);
       }
-      clearInterval(recognitionRef.current.interval);
     }
   };
-
   // Run intent classification whenever transcript changes and user clicks or finishes
   const handleAnalyzeRequest = async () => {
     if (!transcript.trim()) return;
@@ -195,6 +245,8 @@ export const VoiceIntakeView: React.FC<VoiceIntakeViewProps> = ({
 
   const selectPreset = (text: string) => {
     setTranscript(text);
+    const result = classifyCitizenIntent(text, selectedState);
+    setClassificationResult(result);
   };
 
   return (
